@@ -257,6 +257,10 @@ func sliceHelper(reply interface{}, err error, name string, makeSlice func(int),
 			if reply[i] == nil {
 				continue
 			}
+			err, ok := reply[i].(Error)
+			if ok {
+				return err
+			}
 			if err := assign(i, reply[i]); err != nil {
 				return err
 			}

@@ -143,6 +143,27 @@ var replyTests = []struct {
 		ve(getSlowLog()),
 		ve(redis.SlowLog{ID: 1, Time: time.Unix(1579625870, 0), ExecutionTime: time.Duration(3) * time.Microsecond, Args: []string{"set", "x", "y"}, ClientAddr: "localhost:1234", ClientName: "testClient"}, nil),
 	},
+	// RESP errors in reply
+	{
+		"uint64(err)",
+		ve(redis.Uint64(redis.Error("test"), nil)),
+		ve(uint64(0), redis.Error("test")),
+	},
+	{
+		"int64s([int64, int64, err])",
+		ve(redis.Int64s([]interface{}{int64(4), int64(5), redis.Error("test")}, nil)),
+		ve([]int64{4, 5, 0}, redis.Error("test")),
+	},
+	{
+		"values([v1, v2, err])",
+		ve(redis.Values([]interface{}{[]byte("v1"), []byte("v2"), redis.Error("test")}, nil)),
+		ve([]interface{}{[]byte("v1"), []byte("v2"), redis.Error("test")}, nil),
+	},
+	{
+		"byteslices([v1, v2, err])",
+		ve(redis.ByteSlices([]interface{}{[]byte("v1"), []byte("v2")}, nil)),
+		ve(nil, redis.Error("test")),
+	},
 }
 
 func getSlowLog() (redis.SlowLog, error) {
@@ -155,6 +176,7 @@ func getSlowLog() (redis.SlowLog, error) {
 
 func TestReply(t *testing.T) {
 	for _, rt := range replyTests {
+		fmt.Println(rt.name)
 		if rt.actual.err != rt.expected.err && rt.actual.err.Error() != rt.expected.err.Error() {
 			t.Errorf("%s returned err %v, want %v", rt.name, rt.actual.err, rt.expected.err)
 			continue
